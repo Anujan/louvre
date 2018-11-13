@@ -8,33 +8,16 @@ type Options = {
 };
 
 const defaultOptions = {
-  algorithm: 'sha1',
+  algorithm: 'md5',
   encoding: 'hex'
 };
 
-export function checksum(
-  fd: number,
-  options: Partial<Options> = {},
-  callback: (err?: Error | null, checksum?: string | Buffer) => void
-) {
+export function checksum(buffer: Buffer, options: Partial<Options> = {}) {
   const mergedOptions: Options = Object.assign(defaultOptions, options);
   const hash = crypto.createHash(mergedOptions.algorithm);
   hash.setEncoding(mergedOptions.encoding);
 
-  const stream = fs.createReadStream('', { fd: fd });
-  stream.pipe(
-    hash,
-    { end: false }
-  );
-
-  stream.on('error', function(err) {
-    callback(err);
-  });
-
-  stream.on('end', function() {
-    hash.end();
-    callback(null, hash.read());
-  });
+  hash.update(buffer);
+  hash.end();
+  return hash.read();
 }
-
-export default promisify(checksum);

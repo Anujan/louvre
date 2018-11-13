@@ -1,10 +1,10 @@
 {
   "name": "louvre",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "",
   "keywords": [],
   "main": "dist/lib/louvre.js",
-  "typings": "dist/types/louvre.d.ts",
+  "types": "dist/types/louvre.d.ts",
   "files": [
     "dist"
   ],
@@ -80,6 +80,8 @@
     "@types/jest": "^22.0.0",
     "@types/knex": "^0.14.23",
     "@types/node": "^10.0.3",
+    "@types/sharp": "^0.21.0",
+    "@types/uuid": "^3.4.4",
     "aws-sdk": "^2.353.0",
     "colors": "^1.1.2",
     "commitizen": "^2.9.6",
@@ -112,6 +114,8 @@
     "@types/msgpack-lite": "^0.1.6",
     "debug": "^4.1.0",
     "file-type": "^10.4.0",
-    "msgpack-lite": "^0.1.26"
+    "msgpack-lite": "^0.1.26",
+    "sharp": "^0.21.0",
+    "uuid": "^3.3.2"
   }
 }

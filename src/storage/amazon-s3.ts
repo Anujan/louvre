@@ -1,8 +1,10 @@
-import { TStorage } from './types';
+import { TStorage, UploadOptions, IO, DownloadResult } from './types';
 import fs, { ReadStream } from 'fs';
 import * as AWS from 'aws-sdk';
+import * as debug from 'debug';
 
-type IO = fs.ReadStream | string;
+const log = debug('louvre:s3');
+
 type S3Config = AWS.S3.ClientConfiguration & {
   bucket?: string;
   acl?: string;
@@ -14,14 +16,6 @@ export default class AmazonS3 implements TStorage {
   acl: string;
 
   constructor(config: S3Config) {
-    config = Object.assign(
-      {
-        region: process.env.AWS_REGION,
-        key: process.env.AWS_ACCESS_KEY_ID,
-        secret: process.env.AWS_SECRET_ACCESS_KEY
-      },
-      config
-    );
     const bucket = config.bucket || process.env.AWS_BUCKET;
     if (!bucket) {
       throw new Error('AWS Bucket was not specified');
@@ -29,34 +23,53 @@ export default class AmazonS3 implements TStorage {
     this.bucket = bucket;
 
     this.acl = config.acl || 'public-read';
-    this.s3 = new AWS.S3(config);
+    this.s3 = new AWS.S3({
+      region: config.region
+    });
   }
 
-  upload(stream: IO, key: string) {
+  upload(stream: IO, key: string, options: UploadOptions) {
     if (!stream) {
-      throw new Error('No file stream available to upload');
+      throw new Error('No file input available to upload');
     }
-    const params = { ACL: this.acl, Bucket: this.bucket, Key: key, Body: stream };
+    const params = {
+      ACL: this.acl,
+      Bucket: this.bucket,
+      Key: key,
+      Body: stream,
+      ContentType: options.contentType,
+      ContentMD5: options.checksum
+    };
     return this.s3.putObject(params).promise();
   }
 
-  download(key: string) {
-    return this.s3.getObject({ Bucket: this.bucket, Key: key }).promise();
+  download(key: string): Promise<DownloadResult> {
+    // @ts-ignore
+    return this.s3
+      .getObject({ Bucket: this.bucket, Key: key })
+      .promise()
+      .then(data => ({
+        body: data.Body,
+        byteSize: data.ContentLength,
+        contentType: data.ContentType
+      }));
   }
 
   delete(key: string) {
     return this.s3.deleteObject({ Bucket: this.bucket, Key: key }).promise();
   }
 
-  exists(key: string) {
+  metadata(key: string) {
     return this.s3
       .headObject({
         Bucket: this.bucket,
         Key: key
       })
       .promise()
-      .then(() => true)
-      .catch(() => false);
+      .then(data => ({
+        contentType: data.ContentType,
+        byteSize: data.ContentLength
+      }));
   }
 
   url(key: string, expiresInSeconds: number): string {

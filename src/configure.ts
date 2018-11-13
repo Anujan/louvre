@@ -1,9 +1,12 @@
 import services from './storage';
 import { TStorage } from './storage/types';
 import debug from 'debug';
+import Verifier from './utils/verifier';
 
 const log = debug('louvre');
 let defaultConfig: Config | null = null;
+
+const DEFAULT_URL_EXPIRATION = 60 * 60 * 24 * 7; // 1 week
 
 export function getDefaultConfig(): Config {
   if (defaultConfig === null) {
@@ -22,21 +25,31 @@ type TConfig = {
       acl?: string;
     };
   };
+  secretKey: string;
+  urlExpiration: number;
 };
 
 export default class Config {
-  config: TConfig;
-  primaryService: TStorage;
+  private config: TConfig;
+  private primaryService: TStorage;
+  private verifier: Verifier;
+
   constructor(options: TConfig, setDefault = true) {
     this.config = options;
+    this.primaryService = this.getPrimaryService();
+    this.verifier = new Verifier(this.config.secretKey);
+    log(`Using ${this.primaryService.constructor.name} as primary service for Louvre`);
+
     if (setDefault) {
       defaultConfig = this;
     }
-    this.primaryService = this.getPrimaryService();
-    log(`Using ${this.primaryService.constructor.name} as primary service for Louvre`);
   }
 
-  getPrimaryService() {
+  public getUrlExpiration() {
+    return this.config.urlExpiration || DEFAULT_URL_EXPIRATION;
+  }
+
+  public getPrimaryService() {
     if (!this.primaryService) {
       const serviceName = this.config.primary || Object.keys(this.config.services)[0];
       const Service = services[serviceName];
@@ -52,4 +65,12 @@ export default class Config {
 
     return this.primaryService;
   }
+
+  public getVerifier() {
+    return this.verifier;
+  }
+}
+
+export function configure(options: TConfig, setDefault = true) {
+  return new Config(options, setDefault);
 }

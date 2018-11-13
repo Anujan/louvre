@@ -1,6 +1,6 @@
-import Config from './configure';
+import Config, { getDefaultConfig, configure } from './configure';
 import Blob from './blob';
 
-export { Config, Blob };
+export { Config, Blob, getDefaultConfig, configure };
 
-export default { Config, Blob };
+export default { Config, Blob, getDefaultConfig, configure };
